@@ -1,21 +1,20 @@
 import assert from 'node:assert/strict';
-import {createRequire} from 'node:module';
 import {describe, it} from 'node:test';
 import processor from '../lib/processor.js';
 
 // Import our fixtures
-const require = createRequire(import.meta.url);
-const singlePostFixture = require('./fixtures/single-post.json');
-const singleUserfixture = require('./fixtures/single-user.json');
-const multipleUsersfixture = require('./fixtures/multiple-users.json');
-const singlePagefixture = require('./fixtures/single-page.json');
-const singleCptPostfixture = require('./fixtures/single-cpt-post.json');
-const singlePostWithDuplicateImagesfixture = require('./fixtures/single-post-with-duplicate-images.json');
-const singlePostWithHtmlInTitlefixture = require('./fixtures/single-post-with-html-in-title.json');
-const singlePostNoAuthorFixture = require('./fixtures/single-post-no-author.json');
-const datedPosts = require('./fixtures/dated-posts.json');
-const coAuthorsPostFixture = require('./fixtures/co-authors-post.json');
-const singleCoAuthorPostFixture = require('./fixtures/single-coauthor-post.json');
+import singlePostFixture from './fixtures/single-post.json';
+import singleUserfixture from './fixtures/single-user.json';
+import multipleUsersfixture from './fixtures/multiple-users.json';
+import singlePagefixture from './fixtures/single-page.json';
+import singleCptPostfixture from './fixtures/single-cpt-post.json';
+import singlePostWithDuplicateImagesfixture from './fixtures/single-post-with-duplicate-images.json';
+import singlePostWithHtmlInTitlefixture from './fixtures/single-post-with-html-in-title.json';
+import singlePostNoAuthorFixture from './fixtures/single-post-no-author.json';
+import datedPosts from './fixtures/dated-posts.json';
+import coAuthorsPostFixture from './fixtures/co-authors-post.json';
+import singleCoAuthorPostFixture from './fixtures/single-coauthor-post.json';
+import additionalAuthorsPostFixture from './fixtures/additional-authors-post.json';
 
 describe('Process WordPress REST API JSON', function () {
     it('Can convert a single post', async function () {
@@ -1261,5 +1260,111 @@ describe('Co-Authors Plus multi-author support', function () {
         assert.equal(post.data.authors, undefined);
         assert.ok(typeof post.data.author === 'object' && post.data.author !== null);
         assert.equal(post.data.author.data.slug, 'guest-writer');
+    });
+});
+
+describe('additional_authors custom field support', function () {
+    test('processPost uses authors array for multiple additional_authors', async function () {
+        const users = [
+            {
+                url: 'https://mysite.com/author/maria-garcia',
+                data: {
+                    id: 2447,
+                    slug: 'maria-garcia',
+                    name: 'Maria Garcia',
+                    email: 'maria@example.com'
+                }
+            },
+            {
+                url: 'https://mysite.com/author/thomas-mueller',
+                data: {
+                    id: 5545,
+                    slug: 'thomas-mueller',
+                    name: 'Thomas Mueller',
+                    email: 'thomas@example.com'
+                }
+            }
+        ];
+        const options = {tags: true};
+
+        const post = await processor.processPost(additionalAuthorsPostFixture, users, options);
+
+        expect(post.data.authors).toBeArrayOfSize(2);
+        expect(post.data.author).toBeUndefined();
+        expect(post.data.authors[0].data.slug).toEqual('maria-garcia');
+        expect(post.data.authors[0].data.name).toEqual('Maria Garcia');
+        expect(post.data.authors[1].data.slug).toEqual('thomas-mueller');
+        expect(post.data.authors[1].data.name).toEqual('Thomas Mueller');
+    });
+
+    test('processPost uses author field for single additional_author', async function () {
+        const singleAdditionalAuthor = JSON.parse(JSON.stringify(additionalAuthorsPostFixture));
+        singleAdditionalAuthor.additional_authors = [2447];
+
+        const users = [
+            {
+                url: 'https://mysite.com/author/maria-garcia',
+                data: {
+                    id: 2447,
+                    slug: 'maria-garcia',
+                    name: 'Maria Garcia',
+                    email: 'maria@example.com'
+                }
+            }
+        ];
+        const options = {tags: true};
+
+        const post = await processor.processPost(singleAdditionalAuthor, users, options);
+
+        expect(post.data.authors).toBeUndefined();
+        expect(post.data.author).toBeObject();
+        expect(post.data.author.data.slug).toEqual('maria-garcia');
+    });
+
+    test('processPost skips unmatched IDs in additional_authors', async function () {
+        const users = [
+            {
+                url: 'https://mysite.com/author/maria-garcia',
+                data: {
+                    id: 2447,
+                    slug: 'maria-garcia',
+                    name: 'Maria Garcia'
+                }
+            }
+        ];
+        const options = {tags: true};
+
+        // Fixture has additional_authors: [2447, 5545], but only 2447 is in users
+        const post = await processor.processPost(additionalAuthorsPostFixture, users, options);
+
+        // Only one matched, so single author field is used
+        expect(post.data.authors).toBeUndefined();
+        expect(post.data.author).toBeObject();
+        expect(post.data.author.data.slug).toEqual('maria-garcia');
+    });
+
+    test('processPost prefers co-authors taxonomy over additional_authors', async function () {
+        // Create a post that has both wp:term author taxonomy AND additional_authors
+        const postWithBoth = JSON.parse(JSON.stringify(coAuthorsPostFixture));
+        postWithBoth.additional_authors = [9999];
+
+        const users = [
+            {
+                url: 'https://mysite.com/author/someone-else',
+                data: {
+                    id: 9999,
+                    slug: 'someone-else',
+                    name: 'Someone Else'
+                }
+            }
+        ];
+        const options = {tags: true};
+
+        const post = await processor.processPost(postWithBoth, users, options);
+
+        // Co-authors taxonomy should win — Alice and Bob from the fixture
+        expect(post.data.authors).toBeArrayOfSize(2);
+        expect(post.data.authors[0].data.slug).toEqual('alice-smith');
+        expect(post.data.authors[1].data.slug).toEqual('bob-jones');
     });
 });

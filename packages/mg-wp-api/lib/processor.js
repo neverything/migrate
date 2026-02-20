@@ -1209,6 +1209,16 @@ const processPost = async (wpPost, users, options = {}, errors, fileCache) => { 
         ? processCoAuthors(wpPost._embedded['wp:term'], users)
         : [];
 
+    // If no co-authors from taxonomy, check for custom additional_authors field (array of user IDs)
+    if (coAuthors.length === 0 && Array.isArray(wpPost.additional_authors) && wpPost.additional_authors.length > 0) {
+        wpPost.additional_authors.forEach((authorId) => {
+            const matchedUser = users?.find(u => u.data.id === authorId);
+            if (matchedUser) {
+                coAuthors.push(matchedUser);
+            }
+        });
+    }
+
     // Handle author assignment based on co-authors
     if (wpPost?.parsely?.meta?.author && wpPost.parsely.meta.author.length > 0) {
         wpPost.parsely.meta.author.forEach((author) => {
