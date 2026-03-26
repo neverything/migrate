@@ -1289,12 +1289,12 @@ describe('additional_authors custom field support', function () {
 
         const post = await processor.processPost(additionalAuthorsPostFixture, users, options);
 
-        expect(post.data.authors).toBeArrayOfSize(2);
-        expect(post.data.author).toBeUndefined();
-        expect(post.data.authors[0].data.slug).toEqual('maria-garcia');
-        expect(post.data.authors[0].data.name).toEqual('Maria Garcia');
-        expect(post.data.authors[1].data.slug).toEqual('thomas-mueller');
-        expect(post.data.authors[1].data.name).toEqual('Thomas Mueller');
+        assert.equal(post.data.authors.length, 2);
+        assert.equal(post.data.author, undefined);
+        assert.equal(post.data.authors[0].data.slug, 'maria-garcia');
+        assert.equal(post.data.authors[0].data.name, 'Maria Garcia');
+        assert.equal(post.data.authors[1].data.slug, 'thomas-mueller');
+        assert.equal(post.data.authors[1].data.name, 'Thomas Mueller');
     });
 
     test('processPost uses author field for single additional_author', async function () {
@@ -1316,9 +1316,9 @@ describe('additional_authors custom field support', function () {
 
         const post = await processor.processPost(singleAdditionalAuthor, users, options);
 
-        expect(post.data.authors).toBeUndefined();
-        expect(post.data.author).toBeObject();
-        expect(post.data.author.data.slug).toEqual('maria-garcia');
+        assert.equal(post.data.authors, undefined);
+        assert.ok(typeof post.data.author === 'object' && post.data.author !== null);
+        assert.equal(post.data.author.data.slug, 'maria-garcia');
     });
 
     test('processPost skips unmatched IDs in additional_authors', async function () {
@@ -1338,9 +1338,9 @@ describe('additional_authors custom field support', function () {
         const post = await processor.processPost(additionalAuthorsPostFixture, users, options);
 
         // Only one matched, so single author field is used
-        expect(post.data.authors).toBeUndefined();
-        expect(post.data.author).toBeObject();
-        expect(post.data.author.data.slug).toEqual('maria-garcia');
+        assert.equal(post.data.authors, undefined);
+        assert.ok(typeof post.data.author === 'object' && post.data.author !== null);
+        assert.equal(post.data.author.data.slug, 'maria-garcia');
     });
 
     test('processPost prefers co-authors taxonomy over additional_authors', async function () {
@@ -1363,8 +1363,8 @@ describe('additional_authors custom field support', function () {
         const post = await processor.processPost(postWithBoth, users, options);
 
         // Co-authors taxonomy should win — Alice and Bob from the fixture
-        expect(post.data.authors).toBeArrayOfSize(2);
-        expect(post.data.authors[0].data.slug).toEqual('alice-smith');
-        expect(post.data.authors[1].data.slug).toEqual('bob-jones');
+        assert.equal(post.data.authors.length, 2);
+        assert.equal(post.data.authors[0].data.slug, 'alice-smith');
+        assert.equal(post.data.authors[1].data.slug, 'bob-jones');
     });
 });
