@@ -1,20 +1,22 @@
 import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
 import {describe, it} from 'node:test';
 import processor from '../lib/processor.js';
 
 // Import our fixtures
-import singlePostFixture from './fixtures/single-post.json';
-import singleUserfixture from './fixtures/single-user.json';
-import multipleUsersfixture from './fixtures/multiple-users.json';
-import singlePagefixture from './fixtures/single-page.json';
-import singleCptPostfixture from './fixtures/single-cpt-post.json';
-import singlePostWithDuplicateImagesfixture from './fixtures/single-post-with-duplicate-images.json';
-import singlePostWithHtmlInTitlefixture from './fixtures/single-post-with-html-in-title.json';
-import singlePostNoAuthorFixture from './fixtures/single-post-no-author.json';
-import datedPosts from './fixtures/dated-posts.json';
-import coAuthorsPostFixture from './fixtures/co-authors-post.json';
-import singleCoAuthorPostFixture from './fixtures/single-coauthor-post.json';
-import additionalAuthorsPostFixture from './fixtures/additional-authors-post.json';
+const require = createRequire(import.meta.url);
+const singlePostFixture = require('./fixtures/single-post.json');
+const singleUserfixture = require('./fixtures/single-user.json');
+const multipleUsersfixture = require('./fixtures/multiple-users.json');
+const singlePagefixture = require('./fixtures/single-page.json');
+const singleCptPostfixture = require('./fixtures/single-cpt-post.json');
+const singlePostWithDuplicateImagesfixture = require('./fixtures/single-post-with-duplicate-images.json');
+const singlePostWithHtmlInTitlefixture = require('./fixtures/single-post-with-html-in-title.json');
+const singlePostNoAuthorFixture = require('./fixtures/single-post-no-author.json');
+const datedPosts = require('./fixtures/dated-posts.json');
+const coAuthorsPostFixture = require('./fixtures/co-authors-post.json');
+const singleCoAuthorPostFixture = require('./fixtures/single-coauthor-post.json');
+const additionalAuthorsPostFixture = require('./fixtures/additional-authors-post.json');
 
 describe('Process WordPress REST API JSON', function () {
     it('Can convert a single post', async function () {
@@ -1264,7 +1266,7 @@ describe('Co-Authors Plus multi-author support', function () {
 });
 
 describe('additional_authors custom field support', function () {
-    test('processPost uses authors array for multiple additional_authors', async function () {
+    it('processPost uses authors array for multiple additional_authors', async function () {
         const users = [
             {
                 url: 'https://mysite.com/author/maria-garcia',
@@ -1297,7 +1299,7 @@ describe('additional_authors custom field support', function () {
         assert.equal(post.data.authors[1].data.name, 'Thomas Mueller');
     });
 
-    test('processPost uses author field for single additional_author', async function () {
+    it('processPost uses author field for single additional_author', async function () {
         const singleAdditionalAuthor = JSON.parse(JSON.stringify(additionalAuthorsPostFixture));
         singleAdditionalAuthor.additional_authors = [2447];
 
@@ -1321,7 +1323,7 @@ describe('additional_authors custom field support', function () {
         assert.equal(post.data.author.data.slug, 'maria-garcia');
     });
 
-    test('processPost skips unmatched IDs in additional_authors', async function () {
+    it('processPost skips unmatched IDs in additional_authors', async function () {
         const users = [
             {
                 url: 'https://mysite.com/author/maria-garcia',
@@ -1343,7 +1345,7 @@ describe('additional_authors custom field support', function () {
         assert.equal(post.data.author.data.slug, 'maria-garcia');
     });
 
-    test('processPost prefers co-authors taxonomy over additional_authors', async function () {
+    it('processPost prefers co-authors taxonomy over additional_authors', async function () {
         // Create a post that has both wp:term author taxonomy AND additional_authors
         const postWithBoth = JSON.parse(JSON.stringify(coAuthorsPostFixture));
         postWithBoth.additional_authors = [9999];
